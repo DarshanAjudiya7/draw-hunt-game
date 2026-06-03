@@ -1,0 +1,7 @@
+{
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build --workspace @drawhunt/shared && npm run build --workspace @drawhunt/web",
+  "framework": "nextjs",
+  "outputDirectory": "apps/web/.next"
+}
+
