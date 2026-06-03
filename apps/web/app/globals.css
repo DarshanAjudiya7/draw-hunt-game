@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --panel: rgba(255, 255, 255, 0.12);
+  --stroke: rgba(255, 255, 255, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(66, 211, 146, 0.2), transparent 30%),
+    radial-gradient(circle at 80% 5%, rgba(251, 113, 133, 0.18), transparent 28%),
+    linear-gradient(135deg, #101319 0%, #202331 55%, #111827 100%);
+  color: white;
+  font-family: var(--font-geist-sans), Inter, system-ui, sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.glass {
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  box-shadow: 0 18px 60px rgba(16, 19, 25, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.canvas-shell {
+  touch-action: none;
+  user-select: none;
+  overscroll-behavior: contain;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --panel: rgba(255, 255, 255, 0.68);
+    --stroke: rgba(16, 19, 25, 0.08);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.22), transparent 30%),
+      radial-gradient(circle at 83% 12%, rgba(251, 113, 133, 0.2), transparent 28%),
+      linear-gradient(135deg, #f5f7fb 0%, #e8eef8 100%);
+    color: #101319;
+  }
+}
+

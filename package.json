@@ -1,0 +1,22 @@
+{
+  "name": "drawhunt",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Real-time multiplayer DrawHunt game monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev --workspace @drawhunt/api\" \"npm run dev --workspace @drawhunt/web\"",
+    "build": "npm run build --workspace @drawhunt/shared && npm run build --workspace @drawhunt/api && npm run build --workspace @drawhunt/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}
