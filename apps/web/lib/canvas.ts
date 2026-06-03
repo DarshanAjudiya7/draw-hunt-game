@@ -10,6 +10,7 @@ export function setupCanvas(canvas: HTMLCanvasElement) {
   ctx.scale(ratio, ratio);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  ctx.imageSmoothingEnabled = true;
   return ctx;
 }
 
@@ -29,9 +30,10 @@ export function drawStroke(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElem
   if (points.length === 0) return;
   ctx.save();
   ctx.globalCompositeOperation = stroke.tool === "eraser" ? "destination-out" : "source-over";
+  ctx.globalAlpha = stroke.opacity ?? (stroke.tool === "highlighter" ? 0.35 : 1);
   ctx.strokeStyle = stroke.color;
   ctx.fillStyle = stroke.color;
-  ctx.lineWidth = stroke.size;
+  ctx.lineWidth = stroke.tool === "pencil" ? Math.max(1, stroke.size * 0.55) : stroke.size;
 
   const first = points[0];
   ctx.beginPath();
@@ -54,3 +56,7 @@ export function redraw(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement,
   for (const stroke of strokes) drawStroke(ctx, canvas, stroke);
 }
 
+export function preventTouchGesture(event: React.TouchEvent) {
+  if (event.touches.length > 1) return;
+  event.preventDefault();
+}

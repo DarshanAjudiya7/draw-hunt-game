@@ -1,6 +1,6 @@
 "use client";
 
-import { Brush, Circle, Eraser, Minus, PaintBucket, Pencil, Redo2, RotateCcw, Square, Trash2, Undo2 } from "lucide-react";
+import { Brush, Circle, Eraser, Highlighter, Minus, PaintBucket, Pencil, Redo2, RotateCcw, Square, Trash2, Undo2 } from "lucide-react";
 import type { Tool } from "@drawhunt/shared";
 import { useGameStore } from "@/store/gameStore";
 import { getSocket } from "@/lib/socket";
@@ -8,6 +8,7 @@ import { getSocket } from "@/lib/socket";
 const tools: Array<{ id: Tool; icon: React.ComponentType<{ size?: number }>; label: string }> = [
   { id: "pencil", icon: Pencil, label: "Pencil" },
   { id: "brush", icon: Brush, label: "Brush" },
+  { id: "highlighter", icon: Highlighter, label: "Highlighter" },
   { id: "eraser", icon: Eraser, label: "Eraser" },
   { id: "fill", icon: PaintBucket, label: "Fill" },
   { id: "line", icon: Minus, label: "Line" },
@@ -16,13 +17,17 @@ const tools: Array<{ id: Tool; icon: React.ComponentType<{ size?: number }>; lab
 ];
 
 export function Toolbar() {
-  const { room, tool, color, size, strokes, setTool, setColor, setSize, removeStroke, clearStrokes } = useGameStore();
+  const { room, self, tool, color, size, strokes, setTool, setColor, setSize } = useGameStore();
 
   const undo = () => {
-    const stroke = strokes.at(-1);
+    const stroke = strokes.filter((item) => item.playerId === self?.id).at(-1);
     if (!room || !stroke) return;
-    removeStroke(stroke.strokeId);
     getSocket().emit("undoStroke", { roomId: room.roomId, strokeId: stroke.strokeId });
+  };
+
+  const redo = () => {
+    if (!room) return;
+    getSocket().emit("redoStroke", { roomId: room.roomId });
   };
 
   return (
@@ -45,7 +50,7 @@ export function Toolbar() {
       <button className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/10 bg-white/5" title="Undo" onClick={undo}>
         <Undo2 size={18} />
       </button>
-      <button className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/10 bg-white/5" title="Redo">
+      <button className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-white/10 bg-white/5" title="Redo" onClick={redo}>
         <Redo2 size={18} />
       </button>
       <button
@@ -53,7 +58,7 @@ export function Toolbar() {
         title="Clear"
         onClick={() => {
           if (!room) return;
-          clearStrokes();
+          if (!window.confirm("Clear the canvas for everyone in this room?")) return;
           getSocket().emit("clearCanvas", { roomId: room.roomId });
         }}
       >
@@ -65,4 +70,3 @@ export function Toolbar() {
     </div>
   );
 }
-

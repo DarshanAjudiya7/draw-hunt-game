@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Copy, Crown, LogIn, Play, Users } from "lucide-react";
 import type { GameMode } from "@drawhunt/shared";
@@ -15,17 +16,27 @@ const modes: Array<{ id: GameMode; label: string }> = [
 ];
 
 export function Lobby() {
-  const { room, self, mode, setMode, setRoom, setSelf, setToken } = useGameStore();
+  const { room, self, mode, error, setError, setMode, setRoom, setSelf, setToken, setCanvasState } = useGameStore();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roomCode = params.get("room");
+    const input = document.getElementById("roomId") as HTMLInputElement | null;
+    if (roomCode && input) input.value = roomCode.toUpperCase();
+  }, []);
 
   const create = () => {
     const username = (document.getElementById("username") as HTMLInputElement | null)?.value || "Guest";
     const socket = getSocket();
+    setError(undefined);
     if (!socket.connected) socket.connect();
     socket.emit("createRoom", { username, mode, token: localStorage.getItem("drawhunt.token") ?? undefined }, (ack) => {
       if (ack.ok && ack.data) {
         setToken(ack.data.token);
         setSelf(ack.data.player);
         setRoom(ack.data.room);
+      } else {
+        setError(ack.error ?? "Could not create room");
       }
     });
   };
@@ -34,12 +45,16 @@ export function Lobby() {
     const username = (document.getElementById("username") as HTMLInputElement | null)?.value || "Guest";
     const roomId = (document.getElementById("roomId") as HTMLInputElement | null)?.value || "";
     const socket = getSocket();
+    setError(undefined);
     if (!socket.connected) socket.connect();
     socket.emit("joinRoom", { roomId, username, token: localStorage.getItem("drawhunt.token") ?? undefined }, (ack) => {
       if (ack.ok && ack.data) {
         setToken(ack.data.token);
         setSelf(ack.data.player);
+        setCanvasState(ack.data.canvas);
         setRoom(ack.data.room);
+      } else {
+        setError(ack.error ?? "Could not join room");
       }
     });
   };
@@ -62,7 +77,8 @@ export function Lobby() {
             <Users size={16} /> Room Setup
           </div>
           <input id="username" className="mt-5 w-full rounded-md border border-white/10 bg-white/10 px-4 py-3 outline-none" placeholder="Nickname" maxLength={24} />
-          <input id="roomId" className="mt-3 w-full rounded-md border border-white/10 bg-white/10 px-4 py-3 uppercase outline-none" placeholder="Room code" maxLength={6} />
+          <input id="roomId" className="mt-3 w-full rounded-md border border-white/10 bg-white/10 px-4 py-3 uppercase outline-none" placeholder="Room code" maxLength={8} />
+          {error ? <div className="mt-3 rounded-md border border-ember/40 bg-ember/15 px-3 py-2 text-sm text-white">{error}</div> : null}
           <div className="mt-4 grid grid-cols-2 gap-2">
             {modes.map((item) => (
               <button key={item.id} onClick={() => setMode(item.id)} className={`rounded-md border px-3 py-2 text-sm ${mode === item.id ? "border-aurora bg-aurora/25" : "border-white/10 bg-white/5"}`}>
@@ -105,11 +121,11 @@ export function Lobby() {
         {room.players.map((player) => (
           <div key={player.id} className="rounded-md border border-white/10 bg-white/5 p-3">
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: player.color }} />
+              <span className={`h-3 w-3 rounded-full ${player.connected === false ? "opacity-30" : ""}`} style={{ backgroundColor: player.color }} />
               <span className="truncate font-semibold">{player.username}</span>
               {player.host ? <Crown className="text-aurora" size={14} /> : null}
             </div>
-            <div className="mt-2 text-xs text-white/50">{player.score} pts</div>
+            <div className="mt-2 text-xs text-white/50">{player.score} pts · {player.connected === false ? "reconnecting" : "online"}</div>
           </div>
         ))}
       </div>

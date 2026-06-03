@@ -7,7 +7,7 @@ export type GameMode =
 
 export type Difficulty = "easy" | "medium" | "hard" | "expert";
 export type RoomStatus = "lobby" | "countdown" | "drawing" | "results" | "closed";
-export type Tool = "pencil" | "brush" | "eraser" | "fill" | "line" | "rect" | "ellipse";
+export type Tool = "pencil" | "brush" | "highlighter" | "eraser" | "fill" | "line" | "rect" | "ellipse";
 
 export interface Player {
   id: string;
@@ -17,6 +17,9 @@ export interface Player {
   score: number;
   ready: boolean;
   host: boolean;
+  connected?: boolean;
+  lastSeen?: number;
+  correctGuess?: boolean;
   team?: "aurora" | "ember";
 }
 
@@ -25,6 +28,7 @@ export interface Challenge {
   prompt: string;
   difficulty: Difficulty;
   hints: string[];
+  maskedWord?: string;
   hiddenObjects?: Array<{ id: string; label: string; x: number; y: number; radius: number }>;
 }
 
@@ -37,8 +41,10 @@ export interface RoomState {
   currentRound: number;
   timer: number;
   challenge?: Challenge;
+  drawerId?: string;
   players: Player[];
   canvasSnapshot?: string;
+  strokeCount?: number;
 }
 
 export interface DrawPoint {
@@ -54,6 +60,7 @@ export interface StrokePacket {
   tool: Tool;
   color: string;
   size: number;
+  opacity?: number;
   points: DrawPoint[];
   ts: number;
 }
@@ -65,7 +72,15 @@ export interface ChatMessage {
   username: string;
   message: string;
   system?: boolean;
+  avatar?: string;
+  correct?: boolean;
   createdAt: number;
+}
+
+export interface CanvasState {
+  strokes: StrokePacket[];
+  snapshot?: string;
+  strokeCount: number;
 }
 
 export interface ClientToServerEvents {
@@ -75,7 +90,11 @@ export interface ClientToServerEvents {
   ) => void;
   joinRoom: (
     payload: { roomId: string; username: string; avatar?: string; token?: string },
-    ack: (response: SocketAck<{ room: RoomState; player: Player; token: string }>) => void
+    ack: (response: SocketAck<{ room: RoomState; player: Player; token: string; canvas: CanvasState }>) => void
+  ) => void;
+  reconnectRoom: (
+    payload: { roomId: string; token?: string },
+    ack: (response: SocketAck<{ room: RoomState; player: Player; canvas: CanvasState }>) => void
   ) => void;
   leaveRoom: (payload: { roomId: string }) => void;
   playerReady: (payload: { roomId: string; ready: boolean }) => void;
@@ -88,8 +107,10 @@ export interface ClientToServerEvents {
   drawEnd: (payload: { roomId: string; stroke: StrokePacket; snapshot?: string }) => void;
   clearCanvas: (payload: { roomId: string }) => void;
   undoStroke: (payload: { roomId: string; strokeId: string }) => void;
-  redoStroke: (payload: { roomId: string; stroke: StrokePacket }) => void;
+  redoStroke: (payload: { roomId: string; stroke?: StrokePacket }) => void;
   chatMessage: (payload: { roomId: string; message: string }) => void;
+  typing: (payload: { roomId: string; typing: boolean }) => void;
+  pingCheck: (payload: { sentAt: number }, ack: (response: { sentAt: number; serverAt: number }) => void) => void;
   huntTap: (payload: { roomId: string; objectId: string; x: number; y: number }) => void;
 }
 
@@ -102,6 +123,7 @@ export interface ServerToClientEvents {
   challengeUpdate: (challenge: Challenge) => void;
   scoreUpdate: (payload: { players: Player[] }) => void;
   gameFinished: (payload: { room: RoomState; mvp?: Player }) => void;
+  canvasState: (state: CanvasState) => void;
   drawStart: (stroke: StrokePacket) => void;
   drawMove: (stroke: StrokePacket) => void;
   drawEnd: (stroke: StrokePacket) => void;
@@ -109,6 +131,7 @@ export interface ServerToClientEvents {
   undoStroke: (payload: { strokeId: string }) => void;
   redoStroke: (stroke: StrokePacket) => void;
   chatMessage: (message: ChatMessage) => void;
+  typing: (payload: { playerId: string; username: string; typing: boolean }) => void;
   errorMessage: (payload: { message: string }) => void;
 }
 
@@ -140,5 +163,10 @@ export function sanitizeNickname(value: string) {
 
 export function generateRoomId() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 6 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+  const length = Math.random() > 0.75 ? 7 : 6;
+  return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+}
+
+export function normalizeRoomCode(value: string) {
+  return value.replace(/[^A-Z0-9]/gi, "").toUpperCase().slice(0, 8);
 }
