@@ -8,8 +8,17 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev --workspace @drawhunt/api\" \"npm run dev --workspace @drawhunt/web\"",
+    "dev": "npm run build --workspace @drawhunt/shared && concurrently -n shared,api,web -c blue,cyan,magenta \"npm run dev --workspace @drawhunt/shared\" \"npm run dev --workspace @drawhunt/api\" \"npm run dev --workspace @drawhunt/web\"",
+    "dev:api": "npm run build --workspace @drawhunt/shared && concurrently -n shared,api -c blue,cyan \"npm run dev --workspace @drawhunt/shared\" \"npm run dev --workspace @drawhunt/api\"",
+    "dev:web": "npm run build --workspace @drawhunt/shared && npm run dev --workspace @drawhunt/web",
+
     "build": "npm run build --workspace @drawhunt/shared && npm run build --workspace @drawhunt/api && npm run build --workspace @drawhunt/web",
+    "build:api": "npm run build --workspace @drawhunt/shared && npm run build --workspace @drawhunt/api",
+    "build:web": "npm run build --workspace @drawhunt/shared && npm run build --workspace @drawhunt/web",
+
+    "start:api": "npm start --workspace @drawhunt/api",
+    "start:web": "npm start --workspace @drawhunt/web",
+
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },
